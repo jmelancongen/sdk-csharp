@@ -19,7 +19,7 @@ using static CloudNative.CloudEvents.V1.CloudEvent.Types.CloudEventAttributeValu
 namespace CloudNative.CloudEvents.Protobuf
 {
     // TODO: Derived type which expects to only receive protobuf message data with a particular message type,
-    // so is able to unpack it. 
+    // so is able to unpack it.
 
     /// <summary>
     /// Formatter that implements the Protobuf Event Format, using the Google.Protobuf library for serialization.
@@ -114,10 +114,6 @@ namespace CloudNative.CloudEvents.Protobuf
         }
 
         /// <inheritdoc />
-        public override IReadOnlyList<CloudEvent> DecodeBatchModeMessage(ReadOnlyMemory<byte> body, ContentType? contentType, IEnumerable<CloudEventAttribute>? extensionAttributes) =>
-            DecodeBatchModeMessage(BinaryDataUtilities.AsStream(body), contentType, extensionAttributes);
-
-        /// <inheritdoc />
         public override void DecodeBinaryModeEventData(ReadOnlyMemory<byte> body, CloudEvent cloudEvent)
         {
             Validation.CheckNotNull(cloudEvent, nameof(cloudEvent));
@@ -185,6 +181,13 @@ namespace CloudNative.CloudEvents.Protobuf
                 CharSet = Encoding.UTF8.WebName
             };
             return proto.ToByteArray();
+        }
+
+        /// <inheritdoc />
+        public override IReadOnlyList<CloudEvent> DecodeBatchModeMessage(ReadOnlyMemory<byte> body, ContentType? contentType, IEnumerable<CloudEventAttribute>? extensionAttributes)
+        {
+            var batchProto = CloudEventBatch.Parser.ParseFrom(body.Span);
+            return batchProto.Events.Select(proto => ConvertFromProto(proto, extensionAttributes, nameof(body))).ToList();
         }
 
         /// <inheritdoc />
